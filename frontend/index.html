@@ -1,58 +1,558 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SecureProxy</title>
-
-    <!-- This is the correct way -->
-    <link rel='stylesheet' href='/frontend/style.css'>
-
-    <!-- Optional: some good reset/normalize -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+    <title>SecureProxy — Control Panel</title>
+    <link rel="stylesheet" href="/frontend/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
 </head>
 
 <body>
-    <h1>SecureProxy</h1>
-    <p>Secure AI agent bridge for your accounts.</p>
 
-    <div id='auth-section'>
-        <button onclick="window.location='/login'">Login with Auth0</button>
-        <button onclick="window.location='/logout'">Logout</button>
-    </div>
+    <!-- ─── SIDEBAR ────────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">◈</span>
+            <span class="brand-name">SecureProxy</span>
+        </div>
 
-    <hr>
-    <h2>Test the Agent</h2>
-    <div>
-        <label>Action:</label>
-        <select id='action'>
-            <option value='fetch_emails'>Fetch Emails</option>
-            <option value='create_github_issue'>Create GitHub Issue</option>
-        </select>
-    </div>
-    <div>
-        <label>Params (JSON):</label>
-        <textarea id='params' rows='4'>{"count": 3}</textarea>
-    </div>
-    <button onclick='runTask()'>Run Task</button>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-page="dashboard">
+                <span class="nav-icon">▦</span> Dashboard
+            </button>
+            <button class="nav-item" data-page="audit">
+                <span class="nav-icon">≡</span> Audit Log
+            </button>
+            <button class="nav-item" data-page="sandbox">
+                <span class="nav-icon">◎</span> Sandbox Approvals
+                <span class="badge">3</span>
+            </button>
+            <button class="nav-item" data-page="agent">
+                <span class="nav-icon">▷</span> Run Agent
+            </button>
+        </nav>
 
-    <h3>Result:</h3>
-    <pre id='result'>—</pre>
+        <div class="sidebar-footer">
+            <div class="user-chip">
+                <div class="user-avatar">AO</div>
+                <div class="user-info">
+                    <span class="user-name">Agent Ops</span>
+                    <span class="user-role">Admin</span>
+                </div>
+            </div>
+            <button class="btn-ghost" onclick="window.location='/logout'">Sign out</button>
+        </div>
+    </aside>
+
+    <!-- ─── MAIN ───────────────────────────────────────────────────────── -->
+    <main class="main">
+
+        <!-- Top bar -->
+        <header class="topbar">
+            <div class="topbar-title" id="page-title">Permission Dashboard</div>
+            <div class="topbar-actions">
+                <div class="status-dot live"></div>
+                <span class="status-label">Proxy Live</span>
+                <button class="btn btn-primary" onclick="window.location='/login'">Login with Auth0</button>
+            </div>
+        </header>
+
+        <!-- ══ PAGE: DASHBOARD ═══════════════════════════════════════════════ -->
+        <section class="page active" id="page-dashboard">
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Requests</div>
+                    <div class="stat-value">12,847</div>
+                    <div class="stat-delta positive">↑ 8.2% this week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Blocked Actions</div>
+                    <div class="stat-value accent">34</div>
+                    <div class="stat-delta negative">↑ 2 today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Approvals</div>
+                    <div class="stat-value warn">3</div>
+                    <div class="stat-delta">Awaiting review</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Permissions</div>
+                    <div class="stat-value">9 / 12</div>
+                    <div class="stat-delta positive">3 scoped</div>
+                </div>
+            </div>
+
+            <div class="two-col">
+
+                <!-- Permission matrix -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Permission Matrix</span>
+                        <span class="panel-tag">Live</span>
+                    </div>
+                    <table class="perm-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Scope</th>
+                                <th>Read</th>
+                                <th>Write</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="service-dot gmail"></span> Gmail</td>
+                                <td><span class="scope-tag">User</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-off">○</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="service-dot github"></span> GitHub</td>
+                                <td><span class="scope-tag">Org</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-on">●</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="service-dot slack"></span> Slack</td>
+                                <td><span class="scope-tag">User</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-off">○</span></td>
+                                <td><span class="perm-off">○</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="service-dot notion"></span> Notion</td>
+                                <td><span class="scope-tag">Workspace</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-off">○</span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="service-dot stripe"></span> Stripe</td>
+                                <td><span class="scope-tag restricted">Restricted</span></td>
+                                <td><span class="perm-on">●</span></td>
+                                <td><span class="perm-off">○</span></td>
+                                <td><span class="perm-off">○</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Recent activity -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Recent Activity</span>
+                        <button class="link-btn" data-page="audit">View all →</button>
+                    </div>
+                    <ul class="activity-list">
+                        <li class="activity-item">
+                            <span class="act-badge success">OK</span>
+                            <div class="act-body">
+                                <span class="act-action">fetch_emails</span>
+                                <span class="act-meta">Gmail · 2 min ago</span>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <span class="act-badge blocked">BLK</span>
+                            <div class="act-body">
+                                <span class="act-action">delete_repo</span>
+                                <span class="act-meta">GitHub · 11 min ago</span>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <span class="act-badge pending">PND</span>
+                            <div class="act-body">
+                                <span class="act-action">send_payment</span>
+                                <span class="act-meta">Stripe · 18 min ago</span>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <span class="act-badge success">OK</span>
+                            <div class="act-body">
+                                <span class="act-action">create_github_issue</span>
+                                <span class="act-meta">GitHub · 34 min ago</span>
+                            </div>
+                        </li>
+                        <li class="activity-item">
+                            <span class="act-badge success">OK</span>
+                            <div class="act-body">
+                                <span class="act-action">post_message</span>
+                                <span class="act-meta">Slack · 1 hr ago</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ══ PAGE: AUDIT LOG ═══════════════════════════════════════════════ -->
+        <section class="page" id="page-audit">
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Audit Log</span>
+                    <div class="filter-row">
+                        <select class="filter-select" id="audit-filter">
+                            <option value="all">All Status</option>
+                            <option value="success">Allowed</option>
+                            <option value="blocked">Blocked</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                        <input type="text" class="filter-input" placeholder="Search action…" id="audit-search" />
+                        <button class="btn btn-secondary" onclick="exportLog()">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table class="audit-table" id="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Action</th>
+                                <th>Service</th>
+                                <th>Agent</th>
+                                <th>Params</th>
+                                <th>Status</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-body">
+                            <!-- filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-footer">
+                    <span id="audit-count">Showing 0 entries</span>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ PAGE: SANDBOX APPROVALS ═══════════════════════════════════════ -->
+        <section class="page" id="page-sandbox">
+
+            <div class="panel-header standalone">
+                <span>Pending Sandbox Approvals</span>
+                <span class="panel-tag warn">3 awaiting</span>
+            </div>
+
+            <div class="approval-list" id="approval-list">
+
+                <div class="approval-card" id="appr-1">
+                    <div class="appr-header">
+                        <div class="appr-meta">
+                            <span class="appr-service stripe">Stripe</span>
+                            <span class="appr-action">send_payment</span>
+                            <span class="appr-time">18 min ago</span>
+                        </div>
+                        <span class="act-badge pending">PENDING</span>
+                    </div>
+                    <div class="appr-body">
+                        <div class="appr-detail">
+                            <span class="detail-label">Agent</span>
+                            <span class="detail-val">billing-agent-v2</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-val warn">$4,200.00</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Recipient</span>
+                            <span class="detail-val">acct_1aBcDeFgHiJk</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Triggered by</span>
+                            <span class="detail-val">invoice_settled hook</span>
+                        </div>
+                    </div>
+                    <div class="appr-payload">
+                        <pre>{ "to": "acct_1aBcDeFgHiJk", "amount": 420000, "currency": "usd", "description": "Invoice #1042 settlement" }</pre>
+                    </div>
+                    <div class="appr-actions">
+                        <button class="btn btn-danger" onclick="decideApproval('appr-1', false)">✕ Deny</button>
+                        <button class="btn btn-approve" onclick="decideApproval('appr-1', true)">✓ Approve</button>
+                    </div>
+                </div>
+
+                <div class="approval-card" id="appr-2">
+                    <div class="appr-header">
+                        <div class="appr-meta">
+                            <span class="appr-service github">GitHub</span>
+                            <span class="appr-action">delete_repository</span>
+                            <span class="appr-time">42 min ago</span>
+                        </div>
+                        <span class="act-badge pending">PENDING</span>
+                    </div>
+                    <div class="appr-body">
+                        <div class="appr-detail">
+                            <span class="detail-label">Agent</span>
+                            <span class="detail-val">devops-agent-v1</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Repository</span>
+                            <span class="detail-val warn">acme-org/prod-infra</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Reason</span>
+                            <span class="detail-val">Decommission request #887</span>
+                        </div>
+                    </div>
+                    <div class="appr-payload">
+                        <pre>{ "owner": "acme-org", "repo": "prod-infra", "confirm": true }</pre>
+                    </div>
+                    <div class="appr-actions">
+                        <button class="btn btn-danger" onclick="decideApproval('appr-2', false)">✕ Deny</button>
+                        <button class="btn btn-approve" onclick="decideApproval('appr-2', true)">✓ Approve</button>
+                    </div>
+                </div>
+
+                <div class="approval-card" id="appr-3">
+                    <div class="appr-header">
+                        <div class="appr-meta">
+                            <span class="appr-service gmail">Gmail</span>
+                            <span class="appr-action">send_bulk_email</span>
+                            <span class="appr-time">1 hr ago</span>
+                        </div>
+                        <span class="act-badge pending">PENDING</span>
+                    </div>
+                    <div class="appr-body">
+                        <div class="appr-detail">
+                            <span class="detail-label">Agent</span>
+                            <span class="detail-val">outreach-agent-v3</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Recipients</span>
+                            <span class="detail-val warn">1,204 addresses</span>
+                        </div>
+                        <div class="appr-detail">
+                            <span class="detail-label">Subject</span>
+                            <span class="detail-val">Q2 Product Update</span>
+                        </div>
+                    </div>
+                    <div class="appr-payload">
+                        <pre>{ "template": "q2_update_v2", "list": "all_customers", "schedule": "immediate" }</pre>
+                    </div>
+                    <div class="appr-actions">
+                        <button class="btn btn-danger" onclick="decideApproval('appr-3', false)">✕ Deny</button>
+                        <button class="btn btn-approve" onclick="decideApproval('appr-3', true)">✓ Approve</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="empty-state" id="approvals-empty" style="display:none;">
+                <span class="empty-icon">◈</span>
+                <p>All clear — no pending approvals.</p>
+            </div>
+        </section>
+
+        <!-- ══ PAGE: AGENT ════════════════════════════════════════════════════ -->
+        <section class="page" id="page-agent">
+            <div class="panel agent-panel">
+                <div class="panel-header">
+                    <span>Run Agent Task</span>
+                    <span class="panel-tag">Sandbox Mode</span>
+                </div>
+                <div class="agent-form">
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <select id="action" class="form-control">
+                            <option value="fetch_emails">fetch_emails</option>
+                            <option value="create_github_issue">create_github_issue</option>
+                            <option value="post_slack_message">post_slack_message</option>
+                            <option value="send_payment">send_payment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Params <span class="label-sub">(JSON)</span></label>
+                        <textarea id="params" class="form-control code-input" rows="5">{"count": 3}</textarea>
+                    </div>
+                    <button class="btn btn-primary run-btn" onclick="runTask()">
+                        <span class="run-icon">▷</span> Execute Task
+                    </button>
+                </div>
+                <div class="result-panel" id="result-panel">
+                    <div class="result-header">
+                        <span>Response</span>
+                        <span class="result-status" id="result-status"></span>
+                    </div>
+                    <pre id="result">—</pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ─── TOAST ──────────────────────────────────────────────────────── -->
+    <div class="toast" id="toast"></div>
 
     <script>
+        // ── Navigation ──────────────────────────────────────────────────────
+        const pageTitles = {
+            dashboard: 'Permission Dashboard',
+            audit: 'Audit Log',
+            sandbox: 'Sandbox Approvals',
+            agent: 'Run Agent Task'
+        };
+
+        function navigate(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelector(`.nav-item[data-page="${pageId}"]`).classList.add('active');
+            document.getElementById('page-title').textContent = pageTitles[pageId];
+        }
+
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => navigate(btn.dataset.page));
+        });
+        document.querySelectorAll('.link-btn').forEach(btn => {
+            btn.addEventListener('click', () => navigate(btn.dataset.page));
+        });
+
+        // ── Audit Log Data ───────────────────────────────────────────────────
+        const auditData = [
+            { ts: '2025-07-14 14:02:11', action: 'fetch_emails', service: 'Gmail', agent: 'inbox-agent-v1', params: '{"count":3}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 13:51:04', action: 'delete_repo', service: 'GitHub', agent: 'devops-agent-v1', params: '{"repo":"old-service"}', status: 'blocked', reason: 'No delete permission' },
+            { ts: '2025-07-14 13:44:28', action: 'send_payment', service: 'Stripe', agent: 'billing-agent-v2', params: '{"amount":420000}', status: 'pending', reason: 'Requires approval' },
+            { ts: '2025-07-14 13:28:55', action: 'create_github_issue', service: 'GitHub', agent: 'devops-agent-v1', params: '{"title":"Bug #221"}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 13:10:30', action: 'post_message', service: 'Slack', agent: 'comm-agent-v2', params: '{"channel":"#general"}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 12:58:14', action: 'bulk_email', service: 'Gmail', agent: 'outreach-agent-v3', params: '{"list":"all_customers"}', status: 'pending', reason: 'Requires approval' },
+            { ts: '2025-07-14 12:34:00', action: 'update_notion_page', service: 'Notion', agent: 'docs-agent-v1', params: '{"page_id":"abc123"}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 12:01:47', action: 'create_stripe_refund', service: 'Stripe', agent: 'billing-agent-v2', params: '{"charge_id":"ch_xyz"}', status: 'blocked', reason: 'Restricted scope' },
+            { ts: '2025-07-14 11:45:22', action: 'fetch_emails', service: 'Gmail', agent: 'inbox-agent-v1', params: '{"count":10}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 11:22:09', action: 'list_repos', service: 'GitHub', agent: 'devops-agent-v1', params: '{"org":"acme-org"}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 10:59:55', action: 'send_dm', service: 'Slack', agent: 'comm-agent-v2', params: '{"user":"U0123"}', status: 'success', reason: '—' },
+            { ts: '2025-07-14 10:33:40', action: 'delete_notion_block', service: 'Notion', agent: 'docs-agent-v1', params: '{"block_id":"blk_99"}', status: 'blocked', reason: 'No delete permission' },
+        ];
+
+        let filteredData = [...auditData];
+        let currentPage = 1;
+        const PER_PAGE = 8;
+
+        function renderAudit() {
+            const search = document.getElementById('audit-search').value.toLowerCase();
+            const filter = document.getElementById('audit-filter').value;
+            filteredData = auditData.filter(r => {
+                const matchStatus = filter === 'all' || r.status === filter;
+                const matchSearch = r.action.includes(search) || r.service.toLowerCase().includes(search);
+                return matchStatus && matchSearch;
+            });
+            currentPage = 1;
+            renderAuditPage();
+        }
+
+        function renderAuditPage() {
+            const start = (currentPage - 1) * PER_PAGE;
+            const slice = filteredData.slice(start, start + PER_PAGE);
+            const tbody = document.getElementById('audit-body');
+            tbody.innerHTML = slice.map(r => `
+    <tr class="audit-row ${r.status}">
+      <td class="mono">${r.ts}</td>
+      <td class="mono action-cell">${r.action}</td>
+      <td>${r.service}</td>
+      <td class="mono dim">${r.agent}</td>
+      <td class="mono params-cell">${r.params}</td>
+      <td><span class="act-badge ${r.status}">${r.status.toUpperCase().slice(0, 3)}</span></td>
+      <td class="dim">${r.reason}</td>
+    </tr>
+  `).join('');
+
+            document.getElementById('audit-count').textContent =
+                `Showing ${start + 1}–${Math.min(start + PER_PAGE, filteredData.length)} of ${filteredData.length}`;
+
+            const totalPages = Math.ceil(filteredData.length / PER_PAGE);
+            const pg = document.getElementById('pagination');
+            pg.innerHTML = Array.from({ length: totalPages }, (_, i) => `
+    <button class="page-btn ${i + 1 === currentPage ? 'active' : ''}" onclick="goPage(${i + 1})">${i + 1}</button>
+  `).join('');
+        }
+
+        function goPage(n) { currentPage = n; renderAuditPage(); }
+
+        document.getElementById('audit-filter').addEventListener('change', renderAudit);
+        document.getElementById('audit-search').addEventListener('input', renderAudit);
+        renderAudit();
+
+        function exportLog() {
+            const rows = [['Timestamp', 'Action', 'Service', 'Agent', 'Params', 'Status', 'Reason'],
+            ...filteredData.map(r => [r.ts, r.action, r.service, r.agent, r.params, r.status, r.reason])];
+            const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = 'secureproxy_audit.csv'; a.click();
+            showToast('Audit log exported.');
+        }
+
+        // ── Sandbox Approvals ────────────────────────────────────────────────
+        let pendingCount = 3;
+
+        function decideApproval(id, approved) {
+            const card = document.getElementById(id);
+            card.classList.add('resolving');
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(40px)';
+                setTimeout(() => {
+                    card.remove();
+                    pendingCount--;
+                    document.querySelector('.badge').textContent = pendingCount || '';
+                    if (pendingCount === 0) {
+                        document.getElementById('approvals-empty').style.display = 'flex';
+                        document.querySelector('.nav-item[data-page="sandbox"] .badge').style.display = 'none';
+                    }
+                    showToast(approved ? '✓ Action approved and queued.' : '✕ Action denied.');
+                }, 300);
+            }, 150);
+        }
+
+        // ── Agent Task ───────────────────────────────────────────────────────
         async function runTask() {
             const action = document.getElementById('action').value;
-            const params = JSON.parse(document.getElementById('params').value);
-            const resp = await fetch('/agent/task', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, params })
-            });
-            const data = await resp.json();
-            document.getElementById('result').textContent = JSON.stringify(data, null,
-                2);
-        } 
+            let params;
+            try { params = JSON.parse(document.getElementById('params').value); }
+            catch { showToast('Invalid JSON in params.'); return; }
+
+            const resultEl = document.getElementById('result');
+            const statusEl = document.getElementById('result-status');
+            resultEl.textContent = 'Running…';
+            statusEl.textContent = '';
+            statusEl.className = 'result-status';
+
+            try {
+                const resp = await fetch('/agent/task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, params })
+                });
+                const data = await resp.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                statusEl.textContent = resp.ok ? '200 OK' : `${resp.status} Error`;
+                statusEl.className = 'result-status ' + (resp.ok ? 'ok' : 'err');
+            } catch (e) {
+                resultEl.textContent = `Network error: ${e.message}`;
+                statusEl.textContent = 'Failed';
+                statusEl.className = 'result-status err';
+            }
+        }
+
+        // ── Toast ─────────────────────────────────────────────────────────────
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 2800);
+        }
     </script>
 </body>
 

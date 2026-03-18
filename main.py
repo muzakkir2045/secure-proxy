@@ -4,12 +4,21 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware 
 from starlette.middleware.sessions import SessionMiddleware 
 from dotenv import load_dotenv 
-import os, httpx 
+from contextlib import asynccontextmanager
+import os, httpx
+
  
 load_dotenv() 
- 
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http_client = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0))
+    yield
+    await app.state.http_client.aclose()
+
 app = FastAPI(title='SecureProxy') 
- 
+
 # Allow frontend to talk to backend 
 app.add_middleware(CORSMiddleware, 
     allow_origins=['*'], allow_methods=['*'], allow_headers=['*']) 
@@ -30,7 +39,7 @@ BASE_URL     = os.getenv('BASE_URL')
  
 @app.get('/', response_class=HTMLResponse) 
 async def root(): 
-    with open('frontend/index.html') as f: 
+    with open('frontend/index.html', encoding= 'utf-8') as f: 
         return HTMLResponse(f.read()) 
 
 
@@ -49,7 +58,7 @@ async def login(request: Request):
     return RedirectResponse(auth_url) 
 
 @app.get('/callback') 
-async def callback(request: Request, code: str): 
+async def callback(request: Request, code: str = None):
     # Exchange auth code for tokens 
     async with httpx.AsyncClient() as client: 
         resp = await client.post( 
@@ -119,7 +128,13 @@ async def get_vault_token(request: Request, provider: str) -> str:
             detail=f'No vault token for {provider}. User must connect this account first.' 
         ) 
     return resp.json()['access_token'] 
- 
+
+
+# In your route, inject the shared client:
+@app.get("/emails")
+async def emails(request: Request, token: str):
+    client: httpx.AsyncClient = request.app.state.http_client
+    # pass client into your api_clients functions, or use a dependency
  
 # ── Status endpoint ─────────────────────────────────────────────── 
 @app.get('/status') 
