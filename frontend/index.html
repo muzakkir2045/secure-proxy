@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SecureProxy</title>
+
+    <!-- This is the correct way -->
+    <link rel='stylesheet' href='/frontend/style.css'>
+
+    <!-- Optional: some good reset/normalize -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+</head>
+
+<body>
+    <h1>SecureProxy</h1>
+    <p>Secure AI agent bridge for your accounts.</p>
+
+    <div id='auth-section'>
+        <button onclick="window.location='/login'">Login with Auth0</button>
+        <button onclick="window.location='/logout'">Logout</button>
+    </div>
+
+    <hr>
+    <h2>Test the Agent</h2>
+    <div>
+        <label>Action:</label>
+        <select id='action'>
+            <option value='fetch_emails'>Fetch Emails</option>
+            <option value='create_github_issue'>Create GitHub Issue</option>
+        </select>
+    </div>
+    <div>
+        <label>Params (JSON):</label>
+        <textarea id='params' rows='4'>{"count": 3}</textarea>
+    </div>
+    <button onclick='runTask()'>Run Task</button>
+
+    <h3>Result:</h3>
+    <pre id='result'>—</pre>
+
+    <script>
+        async function runTask() {
+            const action = document.getElementById('action').value;
+            const params = JSON.parse(document.getElementById('params').value);
+            const resp = await fetch('/agent/task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, params })
+            });
+            const data = await resp.json();
+            document.getElementById('result').textContent = JSON.stringify(data, null,
+                2);
+        } 
+    </script>
+</body>
+
+</html>
