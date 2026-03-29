@@ -22,7 +22,6 @@ async def login():
     )
     return RedirectResponse(auth_url)
 
-
 @router.get("/callback")
 async def callback(request: Request, code: str = None, state: str = None):
     if not code:
@@ -48,6 +47,7 @@ async def callback(request: Request, code: str = None, state: str = None):
             status_code=400, detail=f"Token exchange failed: {token_data}"
         )
 
+    # Get user info
     async with httpx.AsyncClient() as client:
         userinfo_resp = await client.get(
             f"https://{settings.AUTH0_DOMAIN}/userinfo",
@@ -55,42 +55,80 @@ async def callback(request: Request, code: str = None, state: str = None):
         )
     userinfo = userinfo_resp.json()
     sub = userinfo.get("sub", "")
+    print(f"[Callback] sub={sub}, state={state}")
 
-    if sub.startswith("google-oauth2"):
+    # Always set login session first
+    request.session["access_token"] = access_token
+    request.session["user_id"] = sub
+    request.session["logged_in"] = True
+
+    # ── Handle provider token based on state (from /connect/x) ───────
+    if state == "github":
+        provider_tokens = request.session.get("provider_tokens", {})
+        provider_tokens["github"] = access_token
+        request.session["provider_tokens"] = provider_tokens
+        await store_vault_token(sub, "github", access_token, refresh_token)
+        print(f"[Callback] ✅ Stored GitHub token via /connect/github")
+        return RedirectResponse("/")
+
+    if state in ("gmail", "google-calendar"):
         provider_tokens = request.session.get("provider_tokens", {})
         provider_tokens["gmail"] = access_token
         provider_tokens["google-calendar"] = access_token
         request.session["provider_tokens"] = provider_tokens
+        await store_vault_token(sub, "gmail", access_token, refresh_token)
+        await store_vault_token(sub, "google-calendar", access_token, refresh_token)
+        print(f"[Callback] ✅ Stored Google tokens via /connect/gmail")
+        return RedirectResponse("/")
 
+    # ── Auto-detect provider from sub (initial login) ─────────────────
+    provider_tokens = request.session.get("provider_tokens", {})
+
+    if "github" in sub:
+        # Fetch the actual GitHub token from Auth0 identity
+        try:
+            mgmt_token = await _get_mgmt_token()
+            async with httpx.AsyncClient() as client:
+                user_resp = await client.get(
+                    f"https://{settings.AUTH0_DOMAIN}/api/v2/users/{sub}",
+                    headers={"Authorization": f"Bearer {mgmt_token}"},
+                )
+            identities = user_resp.json().get("identities", [])
+            print(f"[Callback] identities: {identities}")
+            for identity in identities:
+                if identity.get("provider") == "github":
+                    github_token = identity.get("access_token")
+                    print(f"[Callback] GitHub token from identity: {github_token[:15] if github_token else 'None'}")
+                    if github_token:
+                        provider_tokens["github"] = github_token
+                        await store_vault_token(sub, "github", github_token, None)
+        except Exception as e:
+            print(f"[Callback] Failed to fetch GitHub identity token: {e}")
+            # Fallback — use the Auth0 access token
+            provider_tokens["github"] = access_token
+
+    elif "google-oauth2" in sub:
+        provider_tokens["gmail"] = access_token
+        provider_tokens["google-calendar"] = access_token
         await store_vault_token(sub, "gmail", access_token, refresh_token)
         await store_vault_token(sub, "google-calendar", access_token, refresh_token)
 
-    elif sub.startswith("github"):
-        provider_tokens = request.session.get("provider_tokens", {})
-        provider_tokens["github"] = access_token
-        request.session["provider_tokens"] = provider_tokens
-
-        await store_vault_token(sub, "github", access_token, refresh_token)
-
-    if not request.session.get("logged_in"):
-        request.session["access_token"] = access_token
-        request.session["user_id"] = sub
-        request.session["logged_in"] = True
-
+    request.session["provider_tokens"] = provider_tokens
+    print(f"[Callback] provider_tokens keys: {list(provider_tokens.keys())}")
     return RedirectResponse("/")
 
 
-@router.get("/logout")
-async def logout(request: Request):
-    request.session.clear()
-    return RedirectResponse("/")
-
-
-@router.get("/status", response_model=StatusResponse)
-async def status(request: Request):
-    return StatusResponse(
-        logged_in=request.session.get("logged_in", False),
-        user_id=request.session.get("user_id"),
-        providers_linked=list(request.session.get("provider_tokens", {}).keys()),
-        message="SecureProxy is running",
-    )
+async def _get_mgmt_token() -> str:
+    """Helper to get Auth0 management token."""
+    from app.config import settings
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://{settings.AUTH0_DOMAIN}/oauth/token",
+            json={
+                "grant_type": "client_credentials",
+                "client_id": settings.AUTH0_CLIENT_ID,
+                "client_secret": settings.AUTH0_CLIENT_SECRET,
+                "audience": f"https://{settings.AUTH0_DOMAIN}/api/v2/",
+            },
+        )
+    return resp.json().get("access_token", "")

@@ -90,6 +90,7 @@ async def get_vault_token(request: Request, provider: str) -> str:
     if not user_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    # ── Try Auth0 identity token ──────────────────────────────────────
     if user_id:
         try:
             mgmt_token = await get_management_token()
@@ -98,37 +99,64 @@ async def get_vault_token(request: Request, provider: str) -> str:
                     f"https://{settings.AUTH0_DOMAIN}/api/v2/users/{user_id}",
                     headers={"Authorization": f"Bearer {mgmt_token}"},
                 )
-            user_data = resp.json()
-            identities = user_data.get("identities", [])
+            
+            if resp.status_code != 200:
+                print(f"[Token] Management API failed: {resp.status_code} {resp.text}")
+            else:
+                user_data = resp.json()
+                identities = user_data.get("identities", [])
+                provider_map = {
+                    "gmail": "google-oauth2",
+                    "google-calendar": "google-oauth2",
+                    "github": "github",
+                }
+                target = provider_map.get(provider)
 
-            provider_map = {
-                "gmail": "google-oauth2",
-                "google-calendar": "google-oauth2",
-                "github": "github",
-            }
-            target = provider_map.get(provider)
+                for identity in identities:
+                    if identity.get("provider") == target:
+                        raw_token = identity.get("access_token")
+                        print(f"[Token] Found {target} token, validating...")
 
-            for identity in identities:
-                if identity.get("provider") == target:
-                    raw_token = identity.get("access_token")
-                    if raw_token:
-                        async with httpx.AsyncClient() as client:
-                            check = await client.get(
-                                f"https://oauth2.googleapis.com/tokeninfo?access_token={raw_token}"
-                            )
-                        if check.status_code != 200:
-                            print(f"[Token] Token expired, attempting refresh...")
-                            if provider in ("gmail", "google-calendar"):
+                    
+                        print(f"[Token DEBUG] provider={target}")
+                        print(f"[Token DEBUG] token prefix={raw_token[:20] if raw_token else 'None'}")
+
+                        if not raw_token:
+                            print(f"[Token] No access_token in identity for {target}")
+                            break
+
+                        # Validate token (Google only)
+                        if target == "google-oauth2":
+                            async with httpx.AsyncClient() as client:
+                                check = await client.get(
+                                    f"https://oauth2.googleapis.com/tokeninfo"
+                                    f"?access_token={raw_token}"
+                                )
+                            
+                            if check.status_code == 200:
+                                print(f"[Token] ✅ Valid Google token from vault")
+                                return raw_token
+                            else:
+                                print(f"[Token] Token expired, trying refresh...")
                                 refreshed = await refresh_google_token(user_id)
                                 if refreshed:
+                                    # Update session with new token
+                                    provider_tokens = request.session.get("provider_tokens", {})
+                                    provider_tokens[provider] = refreshed
+                                    request.session["provider_tokens"] = provider_tokens
                                     return refreshed
-                            raise HTTPException(
-                                status_code=403,
-                                detail=f"Token expired for {provider}. Visit /connect/{provider} to reconnect.",
-                            )
-        except Exception as e:
-            print(f"[Token] Identity fetch failed for {provider}: {e}")
+                                else:
+                                    print(f"[Token] Refresh failed, falling back to session")
+                                    break
+                        else:
+                            # GitHub tokens don't expire, return directly
+                            print(f"[Token] ✅ Valid GitHub token from vault")
+                            return raw_token
 
+        except Exception as e:
+            print(f"[Token] Vault lookup failed for {provider}: {e}")
+
+    # ── Session fallback ──────────────────────────────────────────────
     session_token = request.session.get("provider_tokens", {}).get(provider)
     if session_token:
         print(f"[Token] ⚠️ Using session fallback for {provider}")
@@ -136,5 +164,5 @@ async def get_vault_token(request: Request, provider: str) -> str:
 
     raise HTTPException(
         status_code=403,
-        detail=f"No token for {provider}. Visit /connect/{provider} first.",
+        detail=f"No token for {provider}. Visit /connect/{provider} to reconnect.",
     )

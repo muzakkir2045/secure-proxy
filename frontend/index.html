@@ -65,6 +65,24 @@
         <!-- ══ PAGE: DASHBOARD ═══════════════════════════════════════════════ -->
         <section class="page active" id="page-dashboard">
 
+            <div class="panel" style="margin-top: 16px;">
+                <div class="panel-header">
+                    <span>Connected Accounts</span>
+                    <span class="panel-tag">Token Vault</span>
+                </div>
+                <div style="padding: 16px 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="window.location='/connect/gmail'">
+                        🔄 Reconnect Gmail
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location='/connect/google-calendar'">
+                        🔄 Reconnect Calendar
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location='/connect/github'">
+                        🔄 Reconnect GitHub
+                    </button>
+                </div>
+            </div>
+
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-label">Total Requests</div>
