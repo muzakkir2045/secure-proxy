@@ -5,11 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SecureProxy — Control Panel</title>
-    <link rel="stylesheet" href="/frontend/style.css" />
+    <link rel="stylesheet" href="/frontend/css/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
 </head>
 
 <body>
@@ -25,27 +23,20 @@
             <button class="nav-item active" data-page="dashboard">
                 <span class="nav-icon">▦</span> Dashboard
             </button>
-            <button class="nav-item" data-page="audit">
-                <span class="nav-icon">≡</span> Audit Log
-            </button>
-            <button class="nav-item" data-page="sandbox">
-                <span class="nav-icon">◎</span> Sandbox Approvals
-                <span class="badge">3</span>
-            </button>
             <button class="nav-item" data-page="agent">
                 <span class="nav-icon">▷</span> Run Agent
             </button>
         </nav>
 
         <div class="sidebar-footer">
-            <div class="user-chip">
-                <div class="user-avatar">AO</div>
+            <div class="user-chip" id="user-chip">
+                <div class="user-avatar" id="user-avatar">–</div>
                 <div class="user-info">
-                    <span class="user-name">Agent Ops</span>
-                    <span class="user-role">Admin</span>
+                    <span class="user-name" id="user-name">Loading…</span>
+                    <span class="user-role">SecureProxy User</span>
                 </div>
             </div>
-            <button class="btn-ghost" onclick="window.location='/logout'">Sign out</button>
+            <button class="btn-ghost" id="logout-btn">Sign out</button>
         </div>
     </aside>
 
@@ -54,13 +45,87 @@
 
         <!-- Top bar -->
         <header class="topbar">
-            <div class="topbar-title" id="page-title">Permission Dashboard</div>
+            <div class="topbar-title" id="page-title">Dashboard</div>
             <div class="topbar-actions">
-                <div class="status-dot live"></div>
+                <div class="status-dot"></div>
                 <span class="status-label">Proxy Live</span>
-                <button class="btn btn-primary" onclick="window.location='/login'">Login with Auth0</button>
             </div>
         </header>
+
+        <!-- ══ PAGE: DASHBOARD ═════════════════════════════════════════════ -->
+        <section class="page active" id="page-dashboard">
+
+            <!-- Connected Accounts Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Connected Accounts</span>
+                    <span class="panel-tag">Token Vault</span>
+                </div>
+                <div class="connected-accounts" id="connected-accounts">
+                    <!-- Populated by auth.js -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ══ PAGE: RUN AGENT ════════════════════════════════════════════ -->
+        <section class="page" id="page-agent">
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Agent Task Runner</span>
+                    <span class="panel-tag">Experimental</span>
+                </div>
+
+                <!-- Task Form -->
+                <div class="agent-form">
+                    <div class="form-group">
+                        <label for="action">Action</label>
+                        <select id="action">
+                            <option value="fetch_emails">fetch_emails (Gmail)</option>
+                            <option value="create_calendar_event">create_calendar_event (Google Calendar)</option>
+                            <option value="create_github_issue">create_github_issue (GitHub)</option>
+                        </select>
+                        <small style="color: var(--text-dim); font-size: 0.75rem; margin-top: 4px;">Select an action to run</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="params">Parameters (JSON)</label>
+                        <textarea id="params" placeholder='{"max_results": 10}'>{"max_results": 10}</textarea>
+                        <small style="color: var(--text-dim); font-size: 0.75rem; margin-top: 4px;">Pass parameters as valid JSON</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="run-task-btn">▷ Run Task</button>
+                        <button class="btn btn-secondary" id="clear-result-btn">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Task Result -->
+                <div class="result-container">
+                    <div>
+                        <span class="result-status" id="result-status">Ready</span>
+                    </div>
+                    <div id="result" class="result-empty">Results will appear here…</div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ─── TOAST CONTAINER ────────────────────────────────────────────── -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ─── SCRIPTS ────────────────────────────────────────────────────── -->
+    <script src="/frontend/js/ui.js"></script>
+    <script src="/frontend/js/auth.js"></script>
+    <script src="/frontend/js/agent.js"></script>
+    <script src="/frontend/js/main.js"></script>
+
+</body>
+
+</html>
 
         <!-- ══ PAGE: DASHBOARD ═══════════════════════════════════════════════ -->
         <section class="page active" id="page-dashboard">
